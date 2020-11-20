@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const db = require('./../bin/db/client');
+const db = require('./../db/client');
 
 
 /* GET home page. */
