@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
+const { URI_MONGO } = require("../config");
 
-mongoose.connect('mongodb+srv://root:root@cluster0.pputj.mongodb.net/wallet?retryWrites=true&w=majority', {useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true})
+mongoose.connect(URI_MONGO, {useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true})
 
 const db = mongoose.connection;
 

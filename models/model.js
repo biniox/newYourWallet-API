@@ -1,7 +1,14 @@
 const mongoose  = require('mongoose');
-let {Shema} = mongoose;
+const bcrypt = require("bcrypt");
+
+const { SALT_ROUND }  = require('./../config');
+
 
 const emailValidator = val => (val.includes("@") && val.includes("."));
+
+const hashPassword = (pass) => bcrypt.hashSync(pass, SALT_ROUND);
+
+const compareHashPassword = (pass1, pass2) => bcrypt.compareSync(pass1,pass2);
 
 const categoryShema = new mongoose.Schema({
     name: { type: String, required: true},  
@@ -22,22 +29,30 @@ const expenseShema = new mongoose.Schema({
 });
 
 const userModel = new mongoose.Schema({
-    name: {type: String, default: false },
-    surname: {type: String, default: false },
-    imgPath: {type: String, default: false },
+    name: {type: String, default: null },
+    surname: {type: String, default: null },
+    imgPath: {type: String, default: null },
     email: {type: String, required: true, validate: {validator: emailValidator, message: "Ojojoj"}, index: {unique: true, dropDups: true} },
-    pass: {type: String, required: true}, 
-    budget: {type: Number, default: false},
+    password: {type: String, required: true, select: false}, 
+    budget: {type: Number, default: null},
     category: [categoryShema],
     purpose: [purposeShema],
     expense: [expenseShema],
     registered: {type: Date, default: new Date()}
 });
 
+userModel.pre('save', function(next) {
+    this.password = hashPassword(this.password);
+    next();
+});
+
 module.exports = {
     userModel: mongoose.model('Users', userModel),
     categoryModel: mongoose.model('Category', categoryShema),
     purposeModel: mongoose.model('Purpose', purposeShema),
-    expenseModel: mongoose.model('Expense', expenseShema)
+    expenseModel: mongoose.model('Expense', expenseShema),
+
+    compareHashPassword
+    
 }
 

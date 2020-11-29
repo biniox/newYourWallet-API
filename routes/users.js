@@ -1,7 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+
 const router = express.Router();
-const {userModel} = require('./../models/model');
+
+const { TOKEN_SECRET_JWT } = require('./../config');
+const {userModel, compareHashPassword} = require('./../models/model');
 
 
 
@@ -11,7 +15,8 @@ const sendProblemWithUserData = (res, err) => {
   if(err.code == 11000 && err.keyPattern.email === 1) 
     res.status(400).json({err: "Email Address is used", code: 'email'}); 
 
-  else if(err.errors.pass)
+  
+  else if(err.errors.password)
     res.status(400).json({err: "Password is required", code: 'password'});
 
   else if(err.errors.email && err.errors.email.kind == 'user defined')
@@ -23,19 +28,60 @@ const sendProblemWithUserData = (res, err) => {
   else if(err.errors == "ObjectId")
     res.status(400).json({err: "ObjectId is invalid", code: "ObjectId"})
 
+  else if(err.errors == "credential")
+    res.status(400).json({err: "wrong email or password", code: "credential"});
+
+  else if(err.errors == "token")
+    res.status(400).json({err: "Invalid access TOKEN or expired", code: "token"})
+
+  else if(err.errors == "tokenNoRefresh")
+    res.status(400).json({err: 'To tefresh your token, use REFRESH TOKEN, not ACCESS TOKEN', code: "tokenNoRefresh"})
+
   else
     res.status(400).json({err: "Problem with Database"});
 }
-/* Spróbuj potem sobie zwracac throw new Error,
- przy łączeniu z Reactem się potestuje */
 
+
+ const generateTokens = (user) => {
+   const ACCESS_TOKEN = jwt.sign({ id: user._id, type: "ACCESS" }, TOKEN_SECRET_JWT,{ expiresIn: 1200 });
+
+   const REFRESH_TOKEN = jwt.sign({ id: user._id, type: "REFRESH"}, TOKEN_SECRET_JWT,{ expiresIn: 480 });
+
+  return {ACCESS_TOKEN, REFRESH_TOKEN};
+
+
+ }
+ 
+ const verifyToken = (req,res,next) => {
+
+
+  try {
+    const TOKEN = req.headers.authorization.split(" ");
+    if(TOKEN[0] == 'Bearer') {
+      const tokenData = jwt.verify(TOKEN[1], TOKEN_SECRET_JWT);
+
+      if(tokenData.type === 'REFRESH') 
+        return res.json(generateTokens({ _id: tokenData.id }));
+      
+      req.id = tokenData.id;
+      console.table(tokenData)
+      next();
+    } else {
+      throw new Error();
+    }
+
+  } catch(err) {
+    console.table(err)
+    sendProblemWithUserData(res, {errors: "token"});
+  }
+
+ }
 
 const createNewUser = (req, res, next) => {
   const newUser = new userModel(req.body);
-
   newUser.validate()
     .then(() => newUser.save())
-    .then(() => res.status(200).json(newUser._id))
+    .then(() => res.status(200).json({ _id: newUser._id }))
     .catch(err => sendProblemWithUserData(res,err));
 
 }
@@ -57,28 +103,37 @@ const getUser = (req, res, next) => {
 
 const authUser = (req, res, next) => {
   const {email, password} = req.body;
-  userModel.find({email, password})
-    .then(data => {
-      if(data) {
-        //make a token and send
-      } else {
-        console.log("wyjebało się");
-      }
-    })
+
+  userModel.findOne({email}).select('password')
+    .then(user => {
+      if(user && compareHashPassword(password, user.password)) 
+        return res.json(generateTokens(user));
+
+      sendProblemWithUserData(res, {errors: "credential"});
+    });
 }
 
 
 /* PUT new USER. */
 router.put('/', createNewUser);
 
-/* GET authorization Token (login) */
-router.get('/authUser', authUser);
+/* POST (login) */
+router.post('/authUser', authUser);
 
 /* GET USER INFO. */
 router.get('/:id', getUser);
 
+
+/* refresh ACCESS TOKEN */
+router.post('/refreshToken', verifyToken, (req,res) => sendProblemWithUserData(res, {errors: 'tokenNoRefresh'}));
+
 module.exports = {
   usersRouter: router,
+  generateTokens,
+  verifyToken,
   createNewUser,
+  getUser,
+  authUser,
+  sendProblemWithUserData
 
 };
