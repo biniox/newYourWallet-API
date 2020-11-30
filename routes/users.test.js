@@ -226,7 +226,7 @@ describe('Authorization', () => {
             expect(res.json.mock.calls[0][0].ACCESS_TOKEN).not.toBeUndefined()
             expect(res.json.mock.calls[0][0].REFRESH_TOKEN).not.toBeUndefined()
             expect(req.id).toBeUndefined();
-            console.log(res.json.mock);
+
         });
 
         test('[Invalid] - [verifyToken()] - Authorization data is missing ', () => {
@@ -239,7 +239,6 @@ describe('Authorization', () => {
             next = jest.fn();
 
             const result = verifyToken(req,res,next);
-            // expect(s)
             expect(next).toHaveBeenCalledTimes(0);
             expect(res.status).toHaveBeenCalledTimes(1);
             expect(res.json).toHaveBeenCalledTimes(1);
@@ -260,7 +259,6 @@ describe('Authorization', () => {
             next = jest.fn();
 
             const result = verifyToken(req,res,next);
-            // expect(s)
             expect(next).toHaveBeenCalledTimes(0);
             expect(res.status).toHaveBeenCalledTimes(1);
             expect(res.json).toHaveBeenCalledTimes(1);
@@ -334,7 +332,6 @@ describe('Authorization', () => {
         test('[Invalid] refresh old Token - token is ACCESS!', async () => {
             const response = await request(app).post('/users/refreshToken').set('authorization', `Bearer ${token.ACCESS_TOKEN}`);
             
-            // expect(response).toMatchSnapshot();
             expect(response.body.ACCESS_TOKEN).toBeUndefined();
             expect(response.body.REFRESH_TOKEN).toBeUndefined();
             expect(response.body.err).toBe('To tefresh your token, use REFRESH TOKEN, not ACCESS TOKEN');
@@ -344,7 +341,6 @@ describe('Authorization', () => {
         test('[Invalid] refresh old Token - token is expired!', async () => {
             const response = await request(app).post('/users/refreshToken').set('authorization', `Bearer ${expiredToken.REFRESH_TOKEN}`);
             
-            // expect(response).toMatchSnapshot();
             expect(response.body.ACCESS_TOKEN).toBeUndefined();
             expect(response.body.REFRESH_TOKEN).toBeUndefined();
             expect(response.body.err).toBe("Invalid access TOKEN or expired");

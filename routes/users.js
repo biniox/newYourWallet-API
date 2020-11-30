@@ -14,7 +14,6 @@ const sendProblemWithUserData = (res, err) => {
 
   if(err.code == 11000 && err.keyPattern.email === 1) 
     res.status(400).json({err: "Email Address is used", code: 'email'}); 
-
   
   else if(err.errors.password)
     res.status(400).json({err: "Password is required", code: 'password'});
@@ -43,12 +42,11 @@ const sendProblemWithUserData = (res, err) => {
 
 
  const generateTokens = (user) => {
-   const ACCESS_TOKEN = jwt.sign({ id: user._id, type: "ACCESS" }, TOKEN_SECRET_JWT,{ expiresIn: 1200 });
+   const ACCESS_TOKEN = jwt.sign({ id: user._id, type: "ACCESS" }, TOKEN_SECRET_JWT,{ expiresIn: 12000 });
 
    const REFRESH_TOKEN = jwt.sign({ id: user._id, type: "REFRESH"}, TOKEN_SECRET_JWT,{ expiresIn: 480 });
 
   return {ACCESS_TOKEN, REFRESH_TOKEN};
-
 
  }
  
@@ -62,27 +60,30 @@ const sendProblemWithUserData = (res, err) => {
 
       if(tokenData.type === 'REFRESH') 
         return res.json(generateTokens({ _id: tokenData.id }));
-      
+
       req.id = tokenData.id;
-      console.table(tokenData)
       next();
     } else {
       throw new Error();
     }
 
   } catch(err) {
-    console.table(err)
     sendProblemWithUserData(res, {errors: "token"});
   }
 
  }
 
-const createNewUser = (req, res, next) => {
-  const newUser = new userModel(req.body);
-  newUser.validate()
-    .then(() => newUser.save())
-    .then(() => res.status(200).json({ _id: newUser._id }))
-    .catch(err => sendProblemWithUserData(res,err));
+const createNewUser = async (req, res, next) => {
+  try {
+      const user = new userModel(req.body);
+      await user.validate();
+      await user.save();
+
+      res.json({ _id: user._id })
+  } catch(err) {
+      sendProblemWithUserData(res,err)
+  }
+
 
 }
 
@@ -101,16 +102,16 @@ const getUser = (req, res, next) => {
   }
 }
 
-const authUser = (req, res, next) => {
+const authUser = async (req, res, next) => {
   const {email, password} = req.body;
 
-  userModel.findOne({email}).select('password')
-    .then(user => {
-      if(user && compareHashPassword(password, user.password)) 
+  const user = await userModel.findOne({email}).select('password');
+
+  if(user && compareHashPassword(password, user.password)) 
         return res.json(generateTokens(user));
 
-      sendProblemWithUserData(res, {errors: "credential"});
-    });
+  sendProblemWithUserData(res, {errors: "credential"});
+
 }
 
 

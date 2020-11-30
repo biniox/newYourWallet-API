@@ -42,7 +42,8 @@ const userModel = new mongoose.Schema({
 });
 
 userModel.pre('save', function(next) {
-    this.password = hashPassword(this.password);
+    if(this.password)
+        this.password = hashPassword(this.password);
     next();
 });
 
