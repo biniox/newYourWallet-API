@@ -24,8 +24,9 @@ app.use((req,res, next) => {
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-app.use('/expense', expenseRouter);
 app.use('/category', categoryRouter);
+
+app.use('/expense', expenseRouter);
 app.use('/purpose', purposeRouter);
 
 module.exports = app;

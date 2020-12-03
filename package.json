@@ -18,7 +18,8 @@
     "supertest": "^6.0.1"
   },
   "jest": {
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "collectCoverage": true
   },
   "devDependencies": {}
 }

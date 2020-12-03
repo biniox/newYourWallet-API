@@ -2,22 +2,26 @@ const mongoose = require('mongoose');
 const request = require('supertest');
 const app = require('../app');
 
-const { URI_MONGO } = require("../config");
+const {
+    closeConnect,
+    connect,
+    clean
+} = require('./../db/client');
+
 const { 
     generateTokens,
     verifyToken,
  } = require("./users");
 
-const clean = () =>  mongoose.connection.dropDatabase();
+
 
 beforeAll(async () => {
-    await mongoose.connect(URI_MONGO, {useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true})  
-    
-    const db = mongoose.connection;
+    await connect()  
 });
 
 afterAll(async () => {
-    mongoose.connection.close();
+    await clean();
+    await closeConnect();
 })
 
 
@@ -69,13 +73,14 @@ afterAll(async () => {
 
  describe('PUT user/ - create a new User', () => {
 
-    afterAll(clean);
+
 
      test('[succesfull] - create a new user', async () => {
         bodyData = {
-            email: "tested1@email.com",
+            email: "users.test.js1@email.com",
             password: "StrongPassword"  
         }
+        
 
         const response  = await request(app).put('/users').send(bodyData);
         
@@ -88,23 +93,6 @@ afterAll(async () => {
         expect(status).toBe(200);
         expect(body.email).toBeUndefined();
         expect(body.password).toBeUndefined();
-     });
-
-     test('[Invalid] - email adress is used', async () => {
-        bodyData = {
-            email: "tested1@email.com",
-            password: "StrongPassword"  
-        }
-
-        const nexUserWithTheSameEmail  = await request(app).put('/users').send(bodyData);
-
-        const { body } = nexUserWithTheSameEmail;
-        const {status, headers} = nexUserWithTheSameEmail;
-
-        expect(headers['content-type']).toBe("application/json; charset=utf-8");
-        expect(body.err).toBe("Email Address is used");
-        expect(body.code).toBe("email");
-        expect(status).toBe(400);
      });
 
      test('[Invalid] - email adress is required', async () => {
@@ -125,7 +113,7 @@ afterAll(async () => {
      
      test('[Invalid] - password is required', async () => {
         bodyData = {
-            email: "tested@email.pl"
+            email: "users.test.js2@email.pl"
         }
 
         const nexUserWithTheSameEmail  = await request(app).put('/users').send(bodyData);
@@ -156,7 +144,30 @@ afterAll(async () => {
         expect(status).toBe(400);
      });
 
-     
+     test('[Invalid] - email adress is used', async () => {
+        /*
+        TODO test is failing when tests from all files is run
+        I think that cleaning function (clean()) is wrong because we can add 2 times, the same user
+        when only file users.test.js is running, test is PASSED
+        */
+        bodyData = {
+            email: "users.test.js1@email.com",
+            password: "StrongPassword"  
+        }
+        
+
+        const nexUserWithTheSameEmail  = await request(app).put('/users').send(bodyData);
+
+        const { body } = nexUserWithTheSameEmail;
+        const {status, headers} = nexUserWithTheSameEmail;
+
+        expect(headers['content-type']).toBe("application/json; charset=utf-8");
+        expect(body.err).toBe("Email Address is used");
+        expect(body.code).toBe("email");
+        expect(status).toBe(400);
+
+
+     });
 });
 
 describe('Authorization', () => {
@@ -168,14 +179,13 @@ describe('Authorization', () => {
 
     beforeAll(async() => {
         bodyData = {
-            email: "tested1@email.com",
+            email: "users.test.js1@email.com",
             password: "StrongPassword"  
         }
 
         await request(app).put('/users').send(bodyData);
     });
 
-    afterAll(clean);
 
     describe('POST /authUser - User Authorization', () => {
 
@@ -208,7 +218,7 @@ describe('Authorization', () => {
             expect(req.id).not.toBeUndefined();
         });
 
-        test('[successfull] - [verifyToken()] - Authorization refresh ACCESS by REFRESH TOKEN ', () => {
+        test('[successfull] - [verifyToken()] - Authorization refresh ACCESS by REFRESH TOKEN ', async () => {
             // for this test we need a token generated in "[successfull] - Authorization" test
             req = {
                 headers: {
@@ -229,7 +239,7 @@ describe('Authorization', () => {
 
         });
 
-        test('[Invalid] - [verifyToken()] - Authorization data is missing ', () => {
+        test('[Invalid] - [verifyToken()] - Authorization data is missing ', async () => {
 
             req = {}
             res = {
@@ -246,7 +256,7 @@ describe('Authorization', () => {
             expect(req.id).toBeUndefined();
         });
         
-        test('[Invalid] - [verifyToken()] - Authorization token is wrong or expired ', () => {
+        test('[Invalid] - [verifyToken()] - Authorization token is wrong or expired ', async() => {
             req = {
                 headers: {
                     authorization: `Bearer whatever`
@@ -266,7 +276,7 @@ describe('Authorization', () => {
             expect(req.id).toBeUndefined();
         });
 
-        test('[Invalid] - [verifyToken()] - Authorization token is expired ', () => {
+        test('[Invalid] - [verifyToken()] - Authorization token is expired ', async () => {
             req = {
                 headers: {
                     authorization: `Bearer ${expiredToken.ACCESS_TOKEN}`

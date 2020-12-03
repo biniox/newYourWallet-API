@@ -78,8 +78,7 @@ const createNewUser = async (req, res, next) => {
       const user = new userModel(req.body);
       await user.validate();
       await user.save();
-
-      res.json({ _id: user._id })
+      await res.json({ _id: user._id })
   } catch(err) {
       sendProblemWithUserData(res,err)
   }

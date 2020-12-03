@@ -22,7 +22,7 @@ const purposeShema = new mongoose.Schema({
 
 const expenseShema = new mongoose.Schema({
     name: {type: String, required: true},
-    categoryId: {type: String, required: true},
+    categoryId: {type: String, required: false, default: null},
     cost: {type: Number, required: true},
     date: {type: Date, default: Date.now()},
 

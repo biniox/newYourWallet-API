@@ -2,22 +2,26 @@ const request = require('supertest');
 const mongoose = require('mongoose');
 
 const app = require('./../app');
-const { URI_MONGO } = require("../config");
+const {
+  closeConnect,
+  connect,
+  clean
+} = require('./../db/client');
 
 let token, categoryId;
 
-const clean = async () =>  await mongoose.connection.dropDatabase();
 
 beforeAll(async () => {
 
-  await mongoose.connect(URI_MONGO, {useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true})  
+  await connect();
+
     
-  const db = await mongoose.connection;
+
 
   bodyData = {
-    email: "tested1@email.com",
+    email: "category.test.js@email.com",
     password: "StrongPassword"  
-}
+  }
   const data = await request(app).put('/users').send(bodyData);
   token = await await request(app).post('/users/authUser').send(bodyData);
   token = token.body;
@@ -27,10 +31,10 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await clean();
-  await mongoose.connection.close();
+  await closeConnect();
 })
 
-describe('PUT category/ - Add a new catwgory', () => {
+describe('PUT category/ - Add a new category', () => {
 
 
 
@@ -85,7 +89,6 @@ describe('POST category/ - get a category list', () => {
 
     expect(body[0].name).toBeDefined();
     expect(Array.isArray(body)).toBeTruthy();
-    // expect(body.length).toBe(1);
 
   });
 
@@ -155,7 +158,7 @@ describe('UPDATE category/ - update selected category', () => {
   });
 });
 
-describe('DELETE category/ - Delete selected category by ID', () => {
+describe('DELETE category/ - Delete selected category by ID',() => {
   test('[successfull] - delete category by ID', async () => {
     const response = await request(app)
       .delete('/category/' + categoryId)
@@ -163,7 +166,6 @@ describe('DELETE category/ - Delete selected category by ID', () => {
 
       const { status, body : { success }} = response;
 
-      // expect(status).toBe(200);
       expect(success).toBe(`${categoryId} was Removed`);
 
   });

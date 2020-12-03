@@ -79,7 +79,7 @@ const deleteCategory = async (req, res, next) => {
 
        user.category = user.category.filter((item, id) => {
         const result = (item._id == req.params.id);
-        // console.log(result);
+
         if(result) {
           index = id;
           msg = `${user.category[index]._id} was Removed`;
@@ -91,10 +91,7 @@ const deleteCategory = async (req, res, next) => {
       const result = await user.save();
 
       if(index != -1) {
-
-        console.log(msg);
         res.json({ success: msg });
-        console.log("here");
       }
       else throw { errors: "noRecord" };
     } catch(err) {
