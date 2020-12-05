@@ -17,7 +17,8 @@ const categoryShema = new mongoose.Schema({
 const purposeShema = new mongoose.Schema({
     name: { type: String, required: true },
     cost: {type: Number, required: true},
-    moneySave: {type: Number, required: true, default: 0}
+    moneySave: {type: Number, required: true, default: 0},
+    realized: { type: Boolean, default: false }
 });
 
 const expenseShema = new mongoose.Schema({
