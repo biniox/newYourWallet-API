@@ -27,7 +27,7 @@ GET /expense/?from=date&to=date - get by date, from, to or both
 DELETE /expense/:id - delete one expense
 
 
-## purpose
+## purpose - Authorization Bearer token is required
 PUT /purpose/ - create a new Purpose (name, cost, moneySave?, realized?);
 
 POST /purpose/:id - edit purpose by id
